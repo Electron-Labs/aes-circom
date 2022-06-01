@@ -1,7 +1,7 @@
 pragma circom 2.0.0;
 
-include "../circomlib/circuits/bitify.circom";
-include "../circomlib/circuits/gates.circom";
+include "../../node_modules/circomlib/circuits/bitify.circom";
+include "../../node_modules/circomlib/circuits/gates.circom";
 
 template RightShift(n, x)
 {	
