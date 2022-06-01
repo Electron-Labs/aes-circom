@@ -25,8 +25,9 @@ template AES256Encrypt()
 
 		s[i] = multibit_xor_1[i].out;
 	}
-	ks_index += 4;
 	
+	ks_index += 4;	
+	component right_shift_2[13][4][4];
 	component multibit_and_2[13][4][4];
 	component multibit_xor_2[13][4][3];
 	
@@ -42,21 +43,20 @@ template AES256Encrypt()
 	}
 	
 	for(i=0; i<13; i++)
-	{
-		
+	{	
 		for(j=0; j<4; j++)
 		{
 			for(k=0; k<4; k++)
 			{
 				var tmp;
-
-				tmp = right_shift(s[(j+k)%4], k*8);
+				right_shift_2[i][j][k] = RightShift(32, k*8);
+				right_shift_2[i][j][k].in <== s[(j+k)%4];
+				tmp = right_shift_2[i][j][k].out;
 
 				multibit_and_2[i][j][k].a <== tmp;
 				multibit_and_2[i][j][k].b <== 0xff;
 
 				tmp = emulated_aesenc_enc_table(k,multibit_and_2[i][j][k].out);	
-
 
 				if(k==0) multibit_xor_2[i][j][0].a <-- tmp;
 				else if(k<3)
@@ -106,4 +106,4 @@ template AES256Encrypt()
 	
 }
 
-component main = AES256Encrypt();
+

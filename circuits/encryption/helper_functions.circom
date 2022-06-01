@@ -3,16 +3,39 @@ pragma circom 2.0.0;
 include "../circomlib/circuits/bitify.circom";
 include "../circomlib/circuits/gates.circom";
 
-function right_shift(in, x)
-{
-	for(var i=0; i<x; i++) in /= 2;
-	return in;
+template RightShift(n, x)
+{	
+	signal input in;
+	signal output out;
+	
+	component num2bits = Num2Bits(n);
+	num2bits.in <== in;
+
+	component bits2num = Bits2Num(n);
+	var i;
+	for(i=0; i<n; i++)
+	{
+		if(i+x<n) bits2num.in[i] <== num2bits.out[i+x];
+		else bits2num.in[i] <== 0;
+	} 
+	out <== bits2num.out;
 }
 
-function left_shift(in, x)
-{
-	for(var i=0; i<x; i++) in *= 2;
-	return in;
+template LeftShift(n, x)
+{	
+	signal input in;
+	signal output out;
+	
+	component num2bits = Num2Bits(n);
+	num2bits.in <== in;
+
+	component bits2num = Bits2Num(n);
+	for(var i=0; i<n; i++)
+	{
+		if(i<x) bits2num.in[i] <== 0;
+		else bits2num.in[i] <== num2bits.out[i-x];
+	}
+	out <== bits2num.out;
 }
 
 template MultibitXor(n)
@@ -57,7 +80,6 @@ template MultibitAnd(n)
 
 	num2bits[0].in <== a;
 	num2bits[1].in <== b;
-	
 	component and[n];
 	for(var i=0; i<n; i++) and[i] = AND();
 
@@ -66,7 +88,6 @@ template MultibitAnd(n)
 	{
 		and[i].a <== num2bits[0].out[i];
 		and[i].b <== num2bits[1].out[i];
-
 		bits2num.in[i] <== and[i].out;
 	}
 
