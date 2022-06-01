@@ -1,7 +1,5 @@
 pragma circom 2.0.0;
 
-include "../circomlib/circuits/bitify.circom";
-include "../circomlib/circuits/gates.circom";
 include "aes_emulation_tables.circom";
 include "aes_emulation.circom";
 include "helper_functions.circom";

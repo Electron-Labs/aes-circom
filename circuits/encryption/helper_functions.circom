@@ -1,5 +1,8 @@
 pragma circom 2.0.0;
 
+include "../circomlib/circuits/bitify.circom";
+include "../circomlib/circuits/gates.circom";
+
 function right_shift(in, x)
 {
 	for(var i=0; i<x; i++) in /= 2;
