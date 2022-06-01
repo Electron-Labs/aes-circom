@@ -4,11 +4,11 @@ template RightShift(n, r) {
     signal input in[n];
     signal output out[n];
 
-    for(var i=n-1; i>=0; i--){
-        if(i-r >= 0){
-            out[i] <== in[i-r];
-        } else {
+    for(var i=0; i<n; i++){
+        if(i+r>=n){
             out[i] <== 0;
+        } else {
+            out[i] <== in[i+r];
         }
     }
 }
