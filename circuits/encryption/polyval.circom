@@ -20,7 +20,7 @@ template POLYVAL(msg_len)
     for(i=0; i<blocks; i++)
     {
         for(j=0; j<2; j++) multibit_xor_1[i][j] = MultibitXor(64);
-        gfmul_int[i] = GFMULInt();
+        gfmul_int_1[i] = GFMULInt();
     }
     
     if(blocks != 0)
@@ -40,15 +40,17 @@ template POLYVAL(msg_len)
 
             for(j=0; j<2; j++)
             {
-                gfmul_int[i].a[j] <== current_res[j];
-                gfmul_int[i].b[j] <== H[j];
+                gfmul_int_1[i].a[j] <== current_res[j];
+                gfmul_int_1[i].b[j] <== H[j];
             }
 
-            current_res = gfmul_int[i].out;
+            current_res = gfmul_int_1[i].res;
         }
     }
 
     result[0] <== current_res[0];
     result[1] <== current_res[1];
+    log(result[0]);
+    log(result[1]);
 
 }
