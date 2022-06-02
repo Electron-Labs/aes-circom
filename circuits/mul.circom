@@ -1,6 +1,5 @@
 pragma circom 2.0.0;
 
-include "extractbit.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/mux1.circom";
 include "rightshift.circom";
@@ -11,7 +10,6 @@ template Mul() {
     signal input src1;
     signal input src2;
     signal output out[2];
-    
     var dst[2];
     dst[0] = 0;
     dst[1] = 0;
@@ -35,6 +33,7 @@ template Mul() {
     component bits2num2[64];
     component leftshift1[64];
     component bits2num3[64];
+    component bits2num4[64];
 
     for(var iter=0; iter<64; iter++)
 	{
@@ -50,7 +49,6 @@ template Mul() {
         equality1[iter] = IsEqual();
         equality1[iter].in[0] <== 1;
         equality1[iter].in[1] <== num2bits1[iter].out[iter];//63-
-        log(num2bits1[iter].out[iter]);
         xor1[iter] = Xor2(64);
         for(var i=0; i<64; i++){
             xor1[iter].a[i] <== num2bits2[iter].out[i];
@@ -82,8 +80,8 @@ template Mul() {
         num2bits5[iter].in <== dst[1];
 
         equality2[iter] = IsEqual();
-        equality2[iter].in[0] <== 0;
-        equality2[iter].in[1] <== num2bits5[iter].out[63];
+        equality2[iter].in[0] <== 1;
+        equality2[iter].in[1] <== num2bits5[iter].out[0];
 
         
 
@@ -108,10 +106,14 @@ template Mul() {
             bits2num2[iter].in[i] <== xor2[iter].out[i];
         }
 
+        bits2num4[iter] = Bits2Num(64);
+        for(var i=0; i<64; i++){
+            bits2num4[iter].in[i] <== rightshift1[iter].out[i];
+        }
 
         mux2[iter] = Mux1();
-        mux2[iter].c[0] <== dst[0];
-        mux2[iter].c[1] <== bits2num2[iter].out;// here i need xor of rightshift1[iter].out[i] and (1<<63)
+        mux2[iter].c[0] <== bits2num4[iter].out;
+        mux2[iter].c[1] <== bits2num2[iter].out;
         mux2[iter].s <== equality2[iter].out;
         
         dst[0] = mux2[iter].out;
