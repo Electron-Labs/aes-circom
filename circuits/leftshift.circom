@@ -1,6 +1,6 @@
 pragma circom 2.0.0;
 
-template LeftShift(n, r) {
+template LeftShiftBitwise(n, r) {
     signal input in[n];
     signal output out[n];
     var j=0;

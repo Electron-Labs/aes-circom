@@ -44,10 +44,10 @@ template AES256KeyExpansion() {
         b_tobits[i] = Num2Bits(32);
         c_tobits[i] = Num2Bits(32);
         d_tobits[i] = Num2Bits(32);
-        a_shiftleft[i] = LeftShift(32, 0);
-        b_shiftleft[i] = LeftShift(32, 8);
-        c_shiftleft[i] = LeftShift(32, 16);
-        d_shiftleft[i] = LeftShift(32, 24);
+        a_shiftleft[i] = LeftShiftBitwise(32, 0);
+        b_shiftleft[i] = LeftShiftBitwise(32, 8);
+        c_shiftleft[i] = LeftShiftBitwise(32, 16);
+        d_shiftleft[i] = LeftShiftBitwise(32, 24);
         ab_xor_1[i] = Xor2(32);
         cd_xor[i] = Xor2(32);
         abcd_xor_1[i] = Xor2(32);
@@ -182,12 +182,12 @@ template AES256KeyExpansion() {
             a_rijndaelVal[i].index <== a_bits2Num_1[i].out;
             a_Num2bits_1[i] = Num2Bits(32);
             a_Num2bits_1[i].in <== a_rijndaelVal[i].out;
-            a_leftshift[i] = LeftShift(32, 24);
+            a_leftshift[i] = LeftShiftBitwise(32, 24);
             for(var iter = 0; iter<32; iter++){
                 a_leftshift[i].in[iter] <== a_Num2bits_1[i].out[iter]; // statement a result
             }
             //--
-            b_rightshift[i] = RightShift(32, 8);
+            b_rightshift[i] = RightShiftBitwise(32, 8);
             for(var iter=0; iter<32; iter++){
                 b_rightshift[i].in[iter] <== prevWbits[i].out[iter];
             }
@@ -209,14 +209,14 @@ template AES256KeyExpansion() {
             b_Num2bits[i] = Num2Bits(32);
             b_Num2bits[i].in <== b_rijndaelVal[i].out;
 
-            b_leftshift[i] = LeftShift(32, 0);
+            b_leftshift[i] = LeftShiftBitwise(32, 0);
             for(var iter=0; iter<32; iter++){
                 b_leftshift[i].in[iter] <== b_Num2bits[i].out[iter]; // statement b result
             }
 
             //---
 
-            c_rightshift[i] = RightShift(32, 16);
+            c_rightshift[i] = RightShiftBitwise(32, 16);
             for(var iter=0; iter<32; iter++){
                 c_rightshift[i].in[iter] <== prevWbits[i].out[iter];
             }
@@ -238,14 +238,14 @@ template AES256KeyExpansion() {
             c_Num2bits[i] = Num2Bits(32);
             c_Num2bits[i].in <== c_rijndaelVal[i].out;
 
-            c_leftshift[i] = LeftShift(32, 8);
+            c_leftshift[i] = LeftShiftBitwise(32, 8);
             for(var iter=0; iter<32; iter++){
                 c_leftshift[i].in[iter] <== c_Num2bits[i].out[iter]; // statement c result
             }
 
 
             //d --
-            d_rightshift[i] = RightShift(32, 24);
+            d_rightshift[i] = RightShiftBitwise(32, 24);
             for(var iter=0; iter<32; iter++){
                 d_rightshift[i].in[iter] <== prevWbits[i].out[iter];
             }
@@ -262,7 +262,7 @@ template AES256KeyExpansion() {
             d_Num2bits[i] = Num2Bits(32);
             d_Num2bits[i].in <== d_rijndaelVal[i].out;
 
-            d_leftshift[i] = LeftShift(32, 16);
+            d_leftshift[i] = LeftShiftBitwise(32, 16);
             for(var iter=0; iter<32; iter++){
                 d_leftshift[i].in[iter] <== d_Num2bits[i].out[iter]; // statement d result
             }
@@ -318,7 +318,7 @@ template AES256KeyExpansion() {
         else{
             if((i%Nk)==4){
                 // f--
-                f_rightshift[i] = RightShift(32, 0);
+                f_rightshift[i] = RightShiftBitwise(32, 0);
                 for(var iter=0; iter<32; iter++){
                     f_rightshift[i].in[iter] <== prevWbits[i].out[iter];
                 }
@@ -340,13 +340,13 @@ template AES256KeyExpansion() {
                 f_Num2bits[i] = Num2Bits(32);
                 f_Num2bits[i].in <== f_rijndaelVal[i].out;
 
-                f_leftshift[i] = LeftShift(32, 0);
+                f_leftshift[i] = LeftShiftBitwise(32, 0);
                 for(var iter=0; iter<32; iter++){
                     f_leftshift[i].in[iter] <== f_Num2bits[i].out[iter]; // statement f result
                 }
 
                 //g--
-                g_rightshift[i] = RightShift(32, 8);
+                g_rightshift[i] = RightShiftBitwise(32, 8);
                 for(var iter=0; iter<32; iter++){
                     g_rightshift[i].in[iter] <== prevWbits[i].out[iter];
                 }
@@ -368,13 +368,13 @@ template AES256KeyExpansion() {
                 g_Num2bits[i] = Num2Bits(32);
                 g_Num2bits[i].in <== g_rijndaelVal[i].out;
 
-                g_leftshift[i] = LeftShift(32, 8);
+                g_leftshift[i] = LeftShiftBitwise(32, 8);
                 for(var iter=0; iter<32; iter++){
                     g_leftshift[i].in[iter] <== g_Num2bits[i].out[iter]; // statement g result
                 }
 
                 //h--
-                h_rightshift[i] = RightShift(32, 16);
+                h_rightshift[i] = RightShiftBitwise(32, 16);
                 for(var iter=0; iter<32; iter++){
                     h_rightshift[i].in[iter] <== prevWbits[i].out[iter];
                 }
@@ -396,13 +396,13 @@ template AES256KeyExpansion() {
                 h_Num2bits[i] = Num2Bits(32);
                 h_Num2bits[i].in <== h_rijndaelVal[i].out;
 
-                h_leftshift[i] = LeftShift(32, 16);
+                h_leftshift[i] = LeftShiftBitwise(32, 16);
                 for(var iter=0; iter<32; iter++){
                     h_leftshift[i].in[iter] <== h_Num2bits[i].out[iter]; // statement h result
                 }
 
                 // i--
-                i_rightshift[i] = RightShift(32, 24);
+                i_rightshift[i] = RightShiftBitwise(32, 24);
                 for(var iter=0; iter<32; iter++){
                     i_rightshift[i].in[iter] <== prevWbits[i].out[iter];
                 }
@@ -420,7 +420,7 @@ template AES256KeyExpansion() {
                 i_Num2bits[i] = Num2Bits(32);
                 i_Num2bits[i].in <== i_rijndaelVal[i].out;
 
-                i_leftshift[i] = LeftShift(32, 24);
+                i_leftshift[i] = LeftShiftBitwise(32, 24);
                 for(var iter=0; iter<32; iter++){
                     i_leftshift[i].in[iter] <== i_Num2bits[i].out[iter]; // statement i result
                 }

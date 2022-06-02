@@ -18,14 +18,14 @@ template GFMULInt()
     
     for(i=0; i<4; i++)
     {
-        vclmul_emulator[i] = VCLMULEmulator(i);
+        vclmul_emulator_1[i] = VCLMULEmulator(i);
         for(j=0; j<2; j++)
         {
-            vclmul_emulator[i].src1[j] <== a[j];
-            vclmul_emulator[i].src2[j] <== b[j];
+            vclmul_emulator_1[i].src1[j] <== a[j];
+            vclmul_emulator_1[i].src2[j] <== b[j];
         }
 
-        tmp[i] = vclmul_emulator[i].destination;
+        tmp[i] = vclmul_emulator_1[i].destination;
     }
 
     component multibit_xor_1[2];
@@ -56,7 +56,7 @@ template GFMULInt()
     for(i=0; i<2; i++) multibit_xor_3[i] = MultibitXor(64);
     for(i=0; i<2; i++)
     {
-        multibit_xor_3[i].a <== tmp[4][i];
+        multibit_xor_3[i].a <== tmp[3][i];
         multibit_xor_3[i].b <== tmp[2][i];
         tmp[4][i] = multibit_xor_3[i].out;
     }

@@ -71,7 +71,7 @@ template Mul() {
         num2bits4[iter] = Num2Bits(64);
         num2bits4[iter].in <== dst[0];
 
-        rightshift1[iter] = RightShift(64, 1);
+        rightshift1[iter] = RightShiftBitwise(64, 1);
         for(var i = 0; i<64; i++){
             rightshift1[iter].in[i] <== num2bits4[iter].out[i]; 
         }
@@ -89,7 +89,7 @@ template Mul() {
         num2bits6[iter] = Num2Bits(64);
         num2bits6[iter].in <== 1;
 
-        leftshift1[iter] = LeftShift(64, 63);
+        leftshift1[iter] = LeftShiftBitwise(64, 63);
 
         for(var i=0 ;i<64; i++){
             leftshift1[iter].in[i] <== num2bits6[iter].out[i];
@@ -121,7 +121,7 @@ template Mul() {
         num2bits7[iter] = Num2Bits(64);
         num2bits7[iter].in <== dst[1];
 
-        rightshift2[iter] = RightShift(64,1);
+        rightshift2[iter] = RightShiftBitwise(64,1);
         for(var i=0; i<64; i++){
             rightshift2[iter].in[i] <== num2bits7[iter].out[i];
         }
