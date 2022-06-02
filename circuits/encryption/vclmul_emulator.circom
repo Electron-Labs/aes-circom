@@ -21,13 +21,13 @@ template VCLMULEmulator(imm) {
         destination[0] <== mul.out[0];
         destination[1] <== mul.out[1];
     }
-    else if(imm == 16){
+    else if(imm == 2){
         mul.src1 <== src1[0];
         mul.src2 <== src2[1];
         destination[0] <== mul.out[0];
         destination[1] <== mul.out[1];
     }
-    else if(imm == 17){
+    else if(imm == 3){
         mul.src1 <== src1[1];
         mul.src2 <== src2[1];
         destination[0] <== mul.out[0];

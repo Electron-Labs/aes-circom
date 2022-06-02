@@ -56,7 +56,7 @@ template GFMULInt()
     for(i=0; i<2; i++) multibit_xor_3[i] = MultibitXor(64);
     for(i=0; i<2; i++)
     {
-        multibit_xor_3[i].a <== tmp[3][i];
+        multibit_xor_3[i].a <== tmp[4][i];
         multibit_xor_3[i].b <== tmp[2][i];
         tmp[4][i] = multibit_xor_3[i].out;
     }
@@ -183,4 +183,6 @@ template GFMULInt()
         multibit_xor_6[i].b <== tmp[1][i];
         res[i] <== multibit_xor_6[i].out;
     }
+
+    for(var i=0; i<2; i++) log(res[i]);
 }
