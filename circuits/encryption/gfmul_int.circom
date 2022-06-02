@@ -9,7 +9,7 @@ template GFMULInt()
     signal input b[2];
     signal output res[2];
 
-    var tmp[4][2];
+    var tmp[5][2];
     var XMMMASK[2] = [0x1, 0xc200000000000000];
 
     var i, j, k;
@@ -18,14 +18,14 @@ template GFMULInt()
     
     for(i=0; i<4; i++)
     {
-        vclmul_emulator[i] = VCLMULEmulator(i);
+        vclmul_emulator_1[i] = VCLMULEmulator(i);
         for(j=0; j<2; j++)
         {
-            vclmul_emulator[i].src1[j] <== a[j];
-            vclmul_emulator[i].src2[j] <== b[j];
+            vclmul_emulator_1[i].src1[j] <== a[j];
+            vclmul_emulator_1[i].src2[j] <== b[j];
         }
 
-        tmp[i] = vclmul_emulator[i].destination;
+        tmp[i+1] = vclmul_emulator_1[i].destination;
     }
 
     component multibit_xor_1[2];
