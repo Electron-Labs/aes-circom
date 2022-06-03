@@ -12,13 +12,6 @@ describe("AES256 Encrypt Test", () => {
 		let _T = [700830645,1135390687,1000768515,2660855300];
 		let witness = await cir.calculateWitness({"ks":ks, "in":inp});
 		witness = witness.slice(1,5);
-		// witness = witness.slice(1,61);
-		// let hex_key = "";
-		// for(let i=0 ;i<60; i++){
-			// console.log("xx", witness[i].toString(16));
-			// hex_key+= witness[i].toString(16);
-		// }
-		// let x= 99;
 		console.log("expected", _T);
 		console.log("witness", witness);
 		

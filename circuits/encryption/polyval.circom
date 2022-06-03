@@ -5,7 +5,7 @@ include "helper_functions.circom";
 
 template POLYVAL(msg_len)
 {
-    signal input in[msg_len];
+    signal input in[msg_len/8];
     signal input H[2];
     signal input T[2];
     signal output result[2];
@@ -50,7 +50,4 @@ template POLYVAL(msg_len)
 
     result[0] <== current_res[0];
     result[1] <== current_res[1];
-    log(result[0]);
-    log(result[1]);
-
 }
