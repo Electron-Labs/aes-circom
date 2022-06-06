@@ -12,7 +12,7 @@ template GFMULInt()
     var tmp[5][2];
     var XMMMASK[2] = [0x1, 0xc200000000000000];
 
-    var i, j, k;
+    var i, j, k, l;
 
     component vclmul_emulator_1[4];
     
@@ -28,37 +28,93 @@ template GFMULInt()
         tmp[i+1] = vclmul_emulator_1[i].destination;
     }
 
-    component multibit_xor_1[2];
-    for(i=0; i<2; i++) multibit_xor_1[i] = MultibitXor(64);
-    for(i=0; i<2; i++)
+    component num2bits_1[4][2];
+    var tmp_bytes[5][4][32];
+    for(i=0; i<4; i++)
     {
-        multibit_xor_1[i].a <== tmp[2][i];
-        multibit_xor_1[i].b <== tmp[3][i];
-        tmp[2][i] = multibit_xor_1[i].out;
+        for(j=0; j<2; j++)
+        {
+            num2bits_1[i][j] = Num2Bits(64);
+            num2bits_1[i][j].in <== tmp[i+1][j];
+
+            for(k=0; k<2; k++)
+            {
+                for(l=0; l<32; l++) tmp_bytes[i+1][j*2+k][l] = num2bits_1[i][j].out[k*32+l];
+            }
+        }
     }
 
-    tmp[3][0] = 0;
-    tmp[3][1] = tmp[2][0];
-
-    tmp[2][0] = tmp[2][1];
-    tmp[2][1] = 0;
-
-    component multibit_xor_2[2];
-    for(i=0; i<2; i++) multibit_xor_2[i] = MultibitXor(64);
-    for(i=0; i<2; i++)
+    component xor_1[4][32];
+    for(i=0; i<4; i++)
     {
-        multibit_xor_2[i].a <== tmp[1][i];
-        multibit_xor_2[i].b <== tmp[3][i];
-        tmp[1][i] = multibit_xor_2[i].out;
+        for(j=0; j<32; j++)
+        {
+            xor_1[i][j] = XOR();
+            xor_1[i][j].a <== tmp_bytes[2][i][j];
+            xor_1[i][j].b <== tmp_bytes[3][i][j];
+
+            tmp_bytes[2][i][j] = xor_1[i][j].out;
+        }
     }
 
-    component multibit_xor_3[2];
-    for(i=0; i<2; i++) multibit_xor_3[i] = MultibitXor(64);
     for(i=0; i<2; i++)
     {
-        multibit_xor_3[i].a <== tmp[4][i];
-        multibit_xor_3[i].b <== tmp[2][i];
-        tmp[4][i] = multibit_xor_3[i].out;
+        for(j=0; j<32; j++) tmp_bytes[3][i][j] = 0;
+    }
+
+    for(i=2; i<4; i++)
+    {
+        for(j=0; j<32; j++) tmp_bytes[3][i][j] = tmp_bytes[2][i-2][j];
+    }
+
+    for(i=0; i<2; i++)
+    {
+        for(j=0; j<32; j++) tmp_bytes[2][i][j] = tmp_bytes[2][i+2][j];
+    }
+
+    for(i=2; i<4; i++)
+    {
+        for(j=0; j<32; j++) tmp_bytes[2][i][j] = 0;
+    }
+
+    component xor_2[4][32];
+    for(i=0; i<4; i++)
+    {
+        for(j=0; j<32; j++)
+        {
+            xor_2[i][j] = XOR();
+            xor_2[i][j].a <== tmp_bytes[1][i][j];
+            xor_2[i][j].b <== tmp_bytes[3][i][j];
+
+            tmp_bytes[1][i][j] = xor_2[i][j].out;
+        }
+    }
+
+    component xor_3[4][32];
+    for(i=0; i<4; i++)
+    {
+        for(j=0; j<32; j++)
+        {
+            xor_3[i][j] = XOR();
+            xor_3[i][j].a <== tmp_bytes[4][i][j];
+            xor_3[i][j].b <== tmp_bytes[2][i][j];
+
+            tmp_bytes[4][i][j] = xor_3[i][j].out;
+        }
+    }
+
+    component bits2num_1[2];
+    for(i=0; i<2; i++)
+    {
+        bits2num_1[i] = Bits2Num(64);
+        for(j=0; j<2; j++)
+        {
+            for(k=0; k<32; k++)
+            {
+                bits2num_1[i].in[j*32+k] <== tmp_bytes[1][i*2+j][k];
+            }
+        }
+        tmp[1][i] = bits2num_1[i].out;
     }
 
     component vclmul_emulator_2 = VCLMULEmulator(1);
@@ -70,55 +126,50 @@ template GFMULInt()
 
     tmp[2] = vclmul_emulator_2.destination;
 
-    var t1[4], t3[4];
-    
-    component num2bits_1[2];
-    component bits2num_1[4];
-    for(i=0; i<2; i++) num2bits_1[i] = Num2Bits(64);
-    for(i=0; i<4; i++) bits2num_1[i] = Bits2Num(32);
-
+    component num2bits_2[2];
     for(i=0; i<2; i++)
     {
-        num2bits_1[i].in <== tmp[1][i];
+        num2bits_2[i] = Num2Bits(64);
+        num2bits_2[i].in <== tmp[2][i];
         for(j=0; j<2; j++)
         {
-            var index = i*2+j;
-            for(k=0; k<32; k++) bits2num_1[index].in[k] <== num2bits_1[i].out[j*32+k];
-            t1[index] = bits2num_1[index].out;
+            for(k=0; k<32; k++) tmp_bytes[2][i*2+j][k] = num2bits_2[i].out[j*32+k];
         }
     }
 
-    t3[0] = t1[2];
-    t3[1] = t1[3];
-    t3[2] = t1[0];
-    t3[3] = t1[1];
+    tmp_bytes[3][0] = tmp_bytes[1][2];
+    tmp_bytes[3][1] = tmp_bytes[1][3];
+    tmp_bytes[3][2] = tmp_bytes[1][0];
+    tmp_bytes[3][3] = tmp_bytes[1][1];
 
-    component num2bits_2[4];
-    component bits2num_2[2];
-    for(i=0; i<4; i++) num2bits_2[i] = Num2Bits(32);
-    for(i=0; i<2; i++) bits2num_2[i] = Bits2Num(64);
-
-    for(i=0; i<2; i++)
+    component xor_4[4][32];
+    for(i=0; i<4; i++)
     {
-        for(j=0; j<2; j++)
+        for(j=0; j<32; j++)
         {
-            var index = i*2+j;
-            num2bits_2[index].in <== t3[index];
-            for(k=0; k<32; k++) bits2num_2[i].in[j*32+k] <== num2bits_2[index].out[k];
-        }
-        tmp[3][i] = bits2num_2[i].out;
-    }
+            xor_4[i][j] = XOR();
+            xor_4[i][j].a <== tmp_bytes[2][i][j];
+            xor_4[i][j].b <== tmp_bytes[3][i][j];
 
-    component multibit_xor_4[2];
-    for(i=0; i<2; i++) multibit_xor_4[i] = MultibitXor(64);
-    for(i=0; i<2; i++)
-    {
-        multibit_xor_4[i].a <== tmp[2][i];
-        multibit_xor_4[i].b <== tmp[3][i];
-        tmp[1][i] = multibit_xor_4[i].out;
+            tmp_bytes[1][i][j] = xor_4[i][j].out;
+        }
     }
 
     ////////////////////////////////////////////////////////////////////
+
+    component bits2num_2[2];
+    for(i=0; i<2; i++)
+    {
+        bits2num_2[i] = Bits2Num(64);
+        for(j=0; j<2; j++)
+        {
+            for(k=0; k<32; k++)
+            {
+                bits2num_2[i].in[j*32+k] <== tmp_bytes[1][i*2+j][k];
+            }
+        }
+        tmp[1][i] = bits2num_2[i].out;
+    }
 
     component vclmul_emulator_3 = VCLMULEmulator(1);
     for(i=0; i<2; i++)
@@ -128,59 +179,52 @@ template GFMULInt()
     }
 
     tmp[2] = vclmul_emulator_3.destination;
-    
+
     component num2bits_3[2];
-    component bits2num_3[4];
-    for(i=0; i<2; i++) num2bits_3[i] = Num2Bits(64);
-    for(i=0; i<4; i++) bits2num_3[i] = Bits2Num(32);
-
     for(i=0; i<2; i++)
     {
-        num2bits_3[i].in <== tmp[1][i];
+        num2bits_3[i] = Num2Bits(64);
+        num2bits_3[i].in <== tmp[2][i];
         for(j=0; j<2; j++)
         {
-            var index = i*2+j;
-            for(k=0; k<32; k++) bits2num_3[index].in[k] <== num2bits_3[i].out[j*32+k];
-            t1[index] = bits2num_3[index].out;
+            for(k=0; k<32; k++) tmp_bytes[2][i*2+j][k] = num2bits_3[i].out[j*32+k];
         }
     }
 
-    t3[0] = t1[2];
-    t3[1] = t1[3];
-    t3[2] = t1[0];
-    t3[3] = t1[1];
+    tmp_bytes[3][0] = tmp_bytes[1][2];
+    tmp_bytes[3][1] = tmp_bytes[1][3];
+    tmp_bytes[3][2] = tmp_bytes[1][0];
+    tmp_bytes[3][3] = tmp_bytes[1][1];
 
-    component num2bits_4[4];
-    component bits2num_4[2];
-    for(i=0; i<4; i++) num2bits_4[i] = Num2Bits(32);
-    for(i=0; i<2; i++) bits2num_4[i] = Bits2Num(64);
+    component xor_5[4][32];
+    for(i=0; i<4; i++)
+    {
+        for(j=0; j<32; j++)
+        {
+            xor_5[i][j] = XOR();
+            xor_5[i][j].a <== tmp_bytes[2][i][j];
+            xor_5[i][j].b <== tmp_bytes[3][i][j];
 
+            tmp_bytes[1][i][j] = xor_5[i][j].out;
+        }
+    }
+
+    component xor_6[4][32];
+    component bits2num_3[2];
     for(i=0; i<2; i++)
     {
+        bits2num_3[i] = Bits2Num(64);
         for(j=0; j<2; j++)
         {
-            var index = i*2+j;
-            num2bits_4[index].in <== t3[index];
-            for(k=0; k<32; k++) bits2num_4[i].in[j*32+k] <== num2bits_4[index].out[k];
+            for(k=0; k<32; k++)
+            {
+                xor_6[i*2+j][k] = XOR();
+                xor_6[i*2+j][k].a <== tmp_bytes[1][i*2+j][k];
+                xor_6[i*2+j][k].b <== tmp_bytes[4][i*2+j][k];
+
+                bits2num_3[i].in[j*32+k] <== xor_6[i*2+j][k].out;
+            }
         }
-        tmp[3][i] = bits2num_4[i].out;
-    }
-
-    component multibit_xor_5[2];
-    for(i=0; i<2; i++) multibit_xor_5[i] = MultibitXor(64);
-    for(i=0; i<2; i++)
-    {
-        multibit_xor_5[i].a <== tmp[2][i];
-        multibit_xor_5[i].b <== tmp[3][i];
-        tmp[1][i] = multibit_xor_5[i].out;
-    }
-
-    component multibit_xor_6[2];
-    for(i=0; i<2; i++) multibit_xor_6[i] = MultibitXor(64);
-    for(i=0; i<2; i++)
-    {
-        multibit_xor_6[i].a <== tmp[4][i];
-        multibit_xor_6[i].b <== tmp[1][i];
-        res[i] <== multibit_xor_6[i].out;
+        res[i] <== bits2num_3[i].out;
     }
 }
