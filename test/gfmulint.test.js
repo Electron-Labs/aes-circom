@@ -8,10 +8,11 @@ describe("GFmul test", () => {
         const cir = await wasmTester(path.join(__dirname,"circuits","gfmul_int2.circom"));
         const a = [BigInt("1"),BigInt("0")];
         const b = [BigInt("4876465869548802997"),BigInt("9173032812820655379")];
+        const res = [BigInt("1447496719058453797"),BigInt("10021191554797066756")];
         let witness = await cir.calculateWitness({"a": a, "b": b});
-        // console.log("Expected", res);
         console.log("a", a);
         console.log("b", b);
+        console.log("Expected", res);
         console.log("witness", witness);
         assert.ok(1)
     })
