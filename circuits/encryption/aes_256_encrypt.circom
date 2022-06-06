@@ -3,107 +3,178 @@ pragma circom 2.0.0;
 include "aes_emulation_tables.circom";
 include "aes_emulation.circom";
 include "helper_functions.circom";
+include "../rightshift.circom";
 
 template AES256Encrypt()
 {
 	signal input in[4];
 	signal input ks[60];
 	signal output out[4];
-	
+
 	var ks_index = 0;
-	var s[4], t[4];
+	var s[4][32], t[4][32];
 	
 	var i,j,k,l;
 	
-	component multibit_xor_1[4];
-	for(i=0; i<4; i++) multibit_xor_1[i] = MultibitXor(32);
+	component num2bits_1[4][2];
+	component xor_1[4][32];
 
 	for(i=0; i<4; i++)
 	{
-		multibit_xor_1[i].a <== in[i];
-		multibit_xor_1[i].b <== ks[i+ks_index];
+		num2bits_1[i][0] = Num2Bits(32);
+		num2bits_1[i][0].in <== in[i];
 
-		s[i] = multibit_xor_1[i].out;
-	}
-	
-	ks_index += 4;	
-	component right_shift_2[13][4][4];
-	component multibit_and_2[13][4][4];
-	component multibit_xor_2[13][4][3];
-	
-	component multibit_xor_3[13][4];
-	for(i=0; i<13; i++)
-	{
-		for(j=0; j<4; j++)
+		num2bits_1[i][1] = Num2Bits(32);
+		num2bits_1[i][1].in <== ks[i+ks_index];
+
+		for(j=0; j<32; j++)
 		{
-			for(k=0; k<4; k++) multibit_and_2[i][j][k] = MultibitAnd(32);
-			for(k=0; k<3; k++) multibit_xor_2[i][j][k] = MultibitXor(32);
-			multibit_xor_3[i][j] = MultibitXor(32);
+			xor_1[i][j] = XOR();
+			xor_1[i][j].a <== num2bits_1[i][0].out[j];
+			xor_1[i][j].b <== num2bits_1[i][1].out[j];
+
+			s[i][j] = xor_1[i][j].out;
 		}
 	}
 	
+	ks_index += 4;
+
+	component num2bits_2 = Num2Bits(32);
+	num2bits_2.in <== 0xff;
+	var bits_0xff[32] = num2bits_2.out;
+
+	component xor_2[13][4][3][32];
+	component and_1[13][4][4][32];
+	component bits2num_1[13][4][4];
+	component num2bits_3[13][4][4];
+	component right_shift_1[13][4][3];
+	component xor_3[13][4][32];
+	component num2bits_4[13][4];
+
 	for(i=0; i<13; i++)
-	{	
+	{
 		for(j=0; j<4; j++)
 		{
 			for(k=0; k<4; k++)
 			{
-				var tmp;
-				right_shift_2[i][j][k] = RightShift(32, k*8);
-				right_shift_2[i][j][k].in <== s[(j+k)%4];
-				tmp = right_shift_2[i][j][k].out;
+				bits2num_1[i][j][k] = Bits2Num(32);
+				num2bits_3[i][j][k] = Num2Bits(32);
+				var s_tmp[32] = s[(j+k)%4];
+				if(k!=0)
+				{
+					right_shift_1[i][j][k-1] = RightShiftBitwise(32, k*8);
+					for(l=0; l<32; l++) right_shift_1[i][j][k-1].in[l] <== s_tmp[l];
+					s_tmp = right_shift_1[i][j][k-1].out; 
+				}
+				for(l=0; l<32; l++)
+				{
+					and_1[i][j][k][l] = AND();
+					and_1[i][j][k][l].a <== s_tmp[l];
+					and_1[i][j][k][l].b <== bits_0xff[l];
 
-				multibit_and_2[i][j][k].a <== tmp;
-				multibit_and_2[i][j][k].b <== 0xff;
+					bits2num_1[i][j][k].in[l] <== and_1[i][j][k][l].out;
+				}
+				num2bits_3[i][j][k].in <-- emulated_aesenc_enc_table(k, bits2num_1[i][j][k].out);
 
-				tmp = emulated_aesenc_enc_table(k,multibit_and_2[i][j][k].out);	
-
-				if(k==0) multibit_xor_2[i][j][0].a <-- tmp;
+				if(k==0)
+				{
+					for(l=0; l<32; l++)
+					{
+						xor_2[i][j][k][l] = XOR();
+						xor_2[i][j][k][l].a <== num2bits_3[i][j][k].out[l];
+					}
+				}
 				else if(k<3)
-				{	
-					multibit_xor_2[i][j][k-1].b <-- tmp;
-					multibit_xor_2[i][j][k].a <== multibit_xor_2[i][j][k-1].out;
-					
+				{
+					for(l=0; l<32; l++)
+					{
+						xor_2[i][j][k-1][l].b <== num2bits_3[i][j][k].out[l];
+
+						xor_2[i][j][k][l] = XOR();
+						xor_2[i][j][k][l].a <== xor_2[i][j][k-1][l].out;
+					}
 				}
 				else
 				{
-					multibit_xor_2[i][j][2].b <-- tmp;
-					multibit_xor_3[i][j].a <== multibit_xor_2[i][j][2].out;
+					for(l=0; l<32; l++)
+					{
+						xor_2[i][j][k-1][l].b <== num2bits_3[i][j][k].out[l];
+
+						xor_3[i][j][l] = XOR();
+						xor_3[i][j][l].a <== xor_2[i][j][k-1][l].out;
+					}
 				}
 			}
 		}
 
-
 		for(j=0; j<4; j++)
 		{
-			multibit_xor_3[i][j].b <== ks[j+ks_index];	
-			s[j] = multibit_xor_3[i][j].out;
+			num2bits_4[i][j] = Num2Bits(32);
+			num2bits_4[i][j].in <== ks[j+ks_index];
+
+			for(l=0; l<32; l++)
+			{
+				xor_3[i][j][l].b <== num2bits_4[i][j].out[l];
+				s[j][l] = xor_3[i][j][l].out;
+			}
 		}
-		
 		ks_index += 4;
 	}
 
-	component row_shifting = EmulatedAesencRowShifting();
-	
-	for(i=0; i<4; i++) row_shifting.in[i] <== s[i];
-	for(i=0; i<4; i++) s[i] = row_shifting.out[i];
-
-	component sub_bytes = EmulatedAesencSubstituteBytes();
-	
-	for(i=0; i<4; i++) sub_bytes.in[i] <== s[i];
-	for(i=0; i<4; i++) s[i] = sub_bytes.out[i];
-
-	component multibit_xor[4];
-	for(i=0; i<4; i++) multibit_xor[i] = MultibitXor(32);
+	component bits2num_2[16];
+	var s_bytes[16];
 
 	for(i=0; i<4; i++)
 	{
-		multibit_xor[i].a <== s[i];
-		multibit_xor[i].b <== ks[i+ks_index];
-
-		out[i] <== multibit_xor[i].out;
+		for(j=0; j<4; j++)
+		{
+			bits2num_2[i*4+j] = Bits2Num(8);
+			for(k=0; k<8; k++) bits2num_2[i*4+j].in[k] <== s[i][j*8+k];
+			s_bytes[i*4+j] = bits2num_2[i*4+j].out;
+		}
 	}
-	
+
+	component row_shifting = EmulatedAesencRowShifting();
+	component sub_bytes = EmulatedAesencSubstituteBytes();
+	for(i=0; i<16; i++) row_shifting.in[i] <== s_bytes[i];
+	for(i=0; i<16; i++) sub_bytes.in[i] <== row_shifting.out[i];
+
+	component num2bits_5[16];
+
+	for(i=0; i<4; i++)
+	{
+		for(j=0; j<4; j++)
+		{
+			num2bits_5[i*4+j] = Num2Bits(8);
+			num2bits_5[i*4+j].in <== sub_bytes.out[i*4+j];
+			for(k=0; k<8; k++) s[i][j*8+k] = num2bits_5[i*4+j].out[k];
+		}
+	}
+
+	component num2bits_6[4];
+	component xor_4[4][32];
+
+	for(i=0; i<4; i++)
+	{
+		num2bits_6[i] = Num2Bits(32);
+		num2bits_6[i].in <== ks[i+ks_index];
+		for(j=0; j<32; j++)
+		{
+			xor_4[i][j] = XOR();
+			xor_4[i][j].a <== s[i][j];
+			xor_4[i][j].b <== num2bits_6[i].out[j];
+
+			s[i][j] = xor_4[i][j].out;
+		}
+	}
+
+	component bits2num_3[4];
+	for(i=0; i<4; i++)
+	{
+		bits2num_3[i] = Bits2Num(32);
+		for(j=0; j<32; j++) bits2num_3[i].in[j] <== s[i][j];
+		out[i] <== bits2num_3[i].out;
+	}
 }
 
 
