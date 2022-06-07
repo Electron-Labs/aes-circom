@@ -29,12 +29,8 @@ template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
     var CTR[2];
     var LENBLK[2];
 
-    component leftshift[2];
-    for(i=0; i<2; i++) leftshift[i] = LeftShift(64, 3);
-    leftshift[0].in <== aad_len;
-    leftshift[1].in <== msg_len;
-    LENBLK[0] = leftshift[0].out;
-    LENBLK[1] = leftshift[1].out;
+    LENBLK[0] = aad_len*8;
+    LENBLK[1] = msg_len*8;
     
     component key_expansion_1 = AES256KeyExpansion();
     for(i=0; i<32; i++) key_expansion_1.key[i] <== K1[i];
