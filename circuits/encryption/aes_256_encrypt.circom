@@ -3,7 +3,6 @@ pragma circom 2.0.0;
 include "aes_emulation_tables.circom";
 include "aes_emulation.circom";
 include "helper_functions.circom";
-include "../rightshift.circom";
 
 template AES256Encrypt()
 {
@@ -39,17 +38,11 @@ template AES256Encrypt()
 	
 	ks_index += 4;
 
-	component num2bits_2 = Num2Bits(32);
-	num2bits_2.in <== 0xff;
-	var bits_0xff[32] = num2bits_2.out;
-
 	component xor_2[13][4][3][32];
-	component and_1[13][4][4][32];
 	component bits2num_1[13][4][4];
-	component num2bits_3[13][4][4];
-	component right_shift_1[13][4][3];
+	component num2bits_2[13][4][4];
 	component xor_3[13][4][32];
-	component num2bits_4[13][4];
+	component num2bits_3[13][4];
 
 	for(i=0; i<13; i++)
 	{
@@ -57,38 +50,27 @@ template AES256Encrypt()
 		{
 			for(k=0; k<4; k++)
 			{
-				bits2num_1[i][j][k] = Bits2Num(32);
-				num2bits_3[i][j][k] = Num2Bits(32);
+				bits2num_1[i][j][k] = Bits2Num(8);
+				num2bits_2[i][j][k] = Num2Bits(32);
 				var s_tmp[32] = s[(j+k)%4];
-				if(k!=0)
-				{
-					right_shift_1[i][j][k-1] = RightShiftBitwise(32, k*8);
-					for(l=0; l<32; l++) right_shift_1[i][j][k-1].in[l] <== s_tmp[l];
-					s_tmp = right_shift_1[i][j][k-1].out; 
-				}
-				for(l=0; l<32; l++)
-				{
-					and_1[i][j][k][l] = AND();
-					and_1[i][j][k][l].a <== s_tmp[l];
-					and_1[i][j][k][l].b <== bits_0xff[l];
+				
+				for(l=0; l<8; l++) bits2num_1[i][j][k].in[l] <== s_tmp[k*8+l];
 
-					bits2num_1[i][j][k].in[l] <== and_1[i][j][k][l].out;
-				}
-				num2bits_3[i][j][k].in <-- emulated_aesenc_enc_table(k, bits2num_1[i][j][k].out);
+				num2bits_2[i][j][k].in <-- emulated_aesenc_enc_table(k, bits2num_1[i][j][k].out);
 
 				if(k==0)
 				{
 					for(l=0; l<32; l++)
 					{
 						xor_2[i][j][k][l] = XOR();
-						xor_2[i][j][k][l].a <== num2bits_3[i][j][k].out[l];
+						xor_2[i][j][k][l].a <== num2bits_2[i][j][k].out[l];
 					}
 				}
 				else if(k<3)
 				{
 					for(l=0; l<32; l++)
 					{
-						xor_2[i][j][k-1][l].b <== num2bits_3[i][j][k].out[l];
+						xor_2[i][j][k-1][l].b <== num2bits_2[i][j][k].out[l];
 
 						xor_2[i][j][k][l] = XOR();
 						xor_2[i][j][k][l].a <== xor_2[i][j][k-1][l].out;
@@ -98,7 +80,7 @@ template AES256Encrypt()
 				{
 					for(l=0; l<32; l++)
 					{
-						xor_2[i][j][k-1][l].b <== num2bits_3[i][j][k].out[l];
+						xor_2[i][j][k-1][l].b <== num2bits_2[i][j][k].out[l];
 
 						xor_3[i][j][l] = XOR();
 						xor_3[i][j][l].a <== xor_2[i][j][k-1][l].out;
@@ -109,12 +91,12 @@ template AES256Encrypt()
 
 		for(j=0; j<4; j++)
 		{
-			num2bits_4[i][j] = Num2Bits(32);
-			num2bits_4[i][j].in <== ks[j+ks_index];
+			num2bits_3[i][j] = Num2Bits(32);
+			num2bits_3[i][j].in <== ks[j+ks_index];
 
 			for(l=0; l<32; l++)
 			{
-				xor_3[i][j][l].b <== num2bits_4[i][j].out[l];
+				xor_3[i][j][l].b <== num2bits_3[i][j].out[l];
 				s[j][l] = xor_3[i][j][l].out;
 			}
 		}
