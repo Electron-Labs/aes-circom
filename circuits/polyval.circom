@@ -15,11 +15,11 @@ template POLYVAL(msg_len)
     var i, j, k;
     var blocks = msg_len/16;
 
-    component multibit_xor_1[blocks][2];
+    component int_xor_1[blocks][2];
     component gfmul_int_1[blocks];
     for(i=0; i<blocks; i++)
     {
-        for(j=0; j<2; j++) multibit_xor_1[i][j] = MultibitXor(64);
+        for(j=0; j<2; j++) int_xor_1[i][j] = IntXor(64);
         gfmul_int_1[i] = GFMULInt();
     }
     
@@ -32,10 +32,10 @@ template POLYVAL(msg_len)
 
             for(j=0; j<2; j++)
             {
-                multibit_xor_1[i][j].a <== current_res[j];
-                multibit_xor_1[i][j].b <== in_t[j];
+                int_xor_1[i][j].a <== current_res[j];
+                int_xor_1[i][j].b <== in_t[j];
 
-                current_res[j] = multibit_xor_1[i][j].out;
+                current_res[j] = int_xor_1[i][j].out;
             }
 
             for(j=0; j<2; j++)

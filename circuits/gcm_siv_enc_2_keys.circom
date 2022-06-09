@@ -1,6 +1,6 @@
 pragma circom 2.0.0;
 
-include "../aes256keyexpansion.circom";
+include "aes_256_key_expansion.circom";
 include "aes_256_encrypt.circom";
 include "aes_256_ctr.circom";
 include "polyval.circom";
@@ -123,15 +123,15 @@ template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
     for(i=0; i<16; i++) typecast_5.in[i] <== N[i];
     N_64 = typecast_5.out;
 
-    component multibit_xor_1[2];
-    for(i=0; i<2; i++) multibit_xor_1[i] = MultibitXor(64);
+    component int_xor_1[2];
+    for(i=0; i<2; i++) int_xor_1[i] = IntXor(64);
 
     for(i=0; i<2; i++)
     {
-        multibit_xor_1[i].a <== T[i];
-        multibit_xor_1[i].b <== N_64[i];
+        int_xor_1[i].a <== T[i];
+        int_xor_1[i].b <== N_64[i];
 
-        T[i] = multibit_xor_1[i].out;
+        T[i] = int_xor_1[i].out;
     }
 
     var TAG_64[2];
@@ -149,10 +149,10 @@ template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
     for(i=0; i<2; i++) typecast_7.in[i] <== TAG_64[i];
     TAG_8 = typecast_7.out;
 
-    component multibit_and_1 = MultibitAnd(8);
-    multibit_and_1.a <== TAG_8[15];
-    multibit_and_1.b <== 127;
-    TAG_8[15] = multibit_and_1.out;
+    component int_and_1 = IntAnd(8);
+    int_and_1.a <== TAG_8[15];
+    int_and_1.b <== 127;
+    TAG_8[15] = int_and_1.out;
 
 
     var Record_Enc_Key[32];
@@ -187,10 +187,10 @@ template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
     for(i=0; i<2; i++) typecast_11.in[i] <== CTR[i];
     CTR_8 = typecast_11.out;
 
-    component multibit_or_1 = MultibitOr(8);
-    multibit_or_1.a <== CTR_8[15];
-    multibit_or_1.b <== 128;
-    CTR_8[15] = multibit_or_1.out;
+    component int_or_1 = IntOr(8);
+    int_or_1.a <== CTR_8[15];
+    int_or_1.b <== 128;
+    CTR_8[15] = int_or_1.out;
 
     var CTR_32[4];
     component typecast_12 = Typecast(16, 8, 32);

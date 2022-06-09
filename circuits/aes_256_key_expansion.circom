@@ -1,8 +1,7 @@
 pragma circom 2.0.0;
 
-include "../node_modules/circomlib/circuits/bitify.circom";
-include "../node_modules/circomlib/circuits/gates.circom";
-include "encryption/aes_emulation_tables.circom";
+include "helper_functions.circom";
+include "aes_emulation_tables.circom";
 
 template AES256KeyExpansion()
 {

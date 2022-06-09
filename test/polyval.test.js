@@ -5,14 +5,15 @@ const wasmTester = require('circom_tester').wasm;
 
 describe("Polyval test", () => {
     it("Show do polyval hashing correctly", async() => {
-        const cir = await wasmTester(path.join(__dirname,"circuits","polyval.circom"));
+        const cir = await wasmTester(path.join(__dirname,"circuits","polyval_test.circom"));
         const input = [1,0,2,0,3,0,4,0];
         const H = [BigInt("4876465869548802997"),BigInt("9173032812820655379")];
         const T = [BigInt("0"),BigInt("0")];
         const result = [BigInt("13221735031628986036"),BigInt("7104869591649800966")];
         let witness = await cir.calculateWitness({"in": input, "H": H, "T": T});
+        witness = witness.slice(1, 3);
         console.log("Expected", result);
         console.log("witness", witness);
-        assert.ok(1)
+        assert.ok(result.every((v, i)=> v == witness[i]));
     })
 })
