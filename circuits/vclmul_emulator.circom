@@ -1,6 +1,6 @@
 pragma circom 2.0.0;
 
-include "../mul.circom";
+include "mul.circom";
 
 template VCLMULEmulator(imm) {
     signal input src1[2];
