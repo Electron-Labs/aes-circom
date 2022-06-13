@@ -11,10 +11,10 @@ describe("Complete Encryption test", () => {
         const AAD = [];
         const MSG = [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
         const CIPHERTEXT = [133,160,27,99,2,91,161,155,127,211,221,252,3,59,62,118,201,234,198,250,112,9,66,112,46,144,134,35,131,198,195,102];
-        let witness = await cir.calculateWitness({"K1": K1, "N":N, "AAD":AAD, "MSG":MSG});
-        witness = witness.slice(1, 33);
-        console.log("Expected", CIPHERTEXT);
+        let witness = await cir.calculateWitness({"K1": K1, "N":N, "AAD":AAD, "MSG":MSG, "CIPHERTEXT":CIPHERTEXT});
+        witness = witness[1];
+        console.log("Expected", 1);
         console.log("witness", witness);
-        assert.ok(CIPHERTEXT.every((v, i)=> v == witness[i]));
+        assert.ok(witness==1);
     })
 })

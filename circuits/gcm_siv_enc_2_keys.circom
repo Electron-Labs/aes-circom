@@ -12,8 +12,11 @@ template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
     signal input N[16];
     signal input AAD[aad_len];
     signal input MSG[msg_len];
+    signal input CIPHERTEXT[msg_len+16];
 
-    signal output CT[msg_len+16];
+    signal CT[msg_len+16];
+
+    signal output out;
 
     var i, j, k;
 
@@ -208,5 +211,16 @@ template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
 
     for(i=0; i<msg_len; i++) CT[i] <== aes_256_ctr.out[i];
     for(i=0; i<16; i++) CT[msg_len+i] <== TAG[i];
-    
+
+    component is_equal[msg_len+16];
+    component multi_and = MultiAND(msg_len+16);
+    for(i=0; i<msg_len+16; i++)
+    {
+        is_equal[i] = IsEqual();
+        is_equal[i].in[0] <== CIPHERTEXT[i];
+        is_equal[i].in[1] <== CT[i];
+        multi_and.in[i] <== is_equal[i].out;
+    }
+
+    out <== multi_and.out;
 }
