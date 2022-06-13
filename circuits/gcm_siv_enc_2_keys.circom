@@ -5,6 +5,7 @@ include "aes_256_encrypt.circom";
 include "aes_256_ctr.circom";
 include "polyval.circom";
 include "helper_functions.circom";
+include "../node_modules/circomlib/circuits/sha256/sha256.circom";
 
 template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
 {
@@ -12,9 +13,9 @@ template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
     signal input N[16];
     signal input AAD[aad_len];
     signal input MSG[msg_len];
-    signal input CIPHERTEXT[msg_len+16];
+    signal input CIPHERTEXT_SHA256[2];
 
-    signal CT[msg_len+16];
+    var CT[msg_len+16];
 
     signal output out;
 
@@ -209,18 +210,39 @@ template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
     for(i=0; i<2; i++) typecast_13.in[i] <== TAG_64_1[i];
     TAG = typecast_13.out;
 
-    for(i=0; i<msg_len; i++) CT[i] <== aes_256_ctr.out[i];
-    for(i=0; i<16; i++) CT[msg_len+i] <== TAG[i];
+    for(i=0; i<msg_len; i++) CT[i] = aes_256_ctr.out[i];
+    for(i=0; i<16; i++) CT[msg_len+i] = TAG[i];
 
-    component is_equal[msg_len+16];
-    component multi_and = MultiAND(msg_len+16);
+    component sha256 = Sha256((msg_len+16)*8);
+    component num2bits_1[msg_len+16];
+
     for(i=0; i<msg_len+16; i++)
     {
-        is_equal[i] = IsEqual();
-        is_equal[i].in[0] <== CIPHERTEXT[i];
-        is_equal[i].in[1] <== CT[i];
-        multi_and.in[i] <== is_equal[i].out;
+        num2bits_1[i] = Num2Bits(8);
+        num2bits_1[i].in <== CT[i];
+        for(j=0; j<8; j++) sha256.in[i*8+7-j] <== num2bits_1[i].out[j];
     }
 
-    out <== multi_and.out;
+    component bits2num_1[2];
+    
+    for(i=0; i<2; i++)
+    {
+        bits2num_1[i] = Bits2Num(128);
+        for(j=0; j<128; j++)
+        {
+            bits2num_1[i].in[127-j] <== sha256.out[i*128+j];
+        }
+    }
+
+    component is_equal_1[2];
+    component multi_and_1 = MultiAND(2);
+    for(i=0; i<2; i++)
+    {
+        is_equal_1[i] = IsEqual();
+        is_equal_1[i].in[0] <== CIPHERTEXT_SHA256[i];
+        is_equal_1[i].in[1] <== bits2num_1[i].out;
+        multi_and_1.in[i] <== is_equal_1[i].out;
+    }
+
+    out <== multi_and_1.out;
 }
