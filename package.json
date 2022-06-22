@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node --experimental-wasm-bigint node_modules/mocha/bin/_mocha --timeout 100000"
+    "test": "node node_modules/mocha/bin/_mocha --timeout 1000000"
   },
   "repository": {
     "type": "git",
