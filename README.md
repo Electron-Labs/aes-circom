@@ -1,1 +1,1 @@
-# aes_gcm-circom
+# AES-GCM Implementation in Circom
