@@ -1,10 +1,10 @@
 #!/bin/bash
 # Copyright © 2022, Electron Labs
 
-set -o xtrace
-set -o verbose
-
-builddir="build"
+readonly nodex="$HOME/bin/usr/local/bin/node"
+readonly node_params="--trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc"
+readonly builddir="build"
+readonly snarkjs="$HOME/snarkjs/cli.js"
 
 function command_exists() {
         if ! command -v "$1" &> /dev/null
@@ -48,9 +48,9 @@ if ! test -f "$ptau"; then
         wget "https://hermez.s3-eu-west-1.amazonaws.com/$ptau"
 fi
 
-snarkjs groth16 setup "$circuit.r1cs" "powersOfTau28_hez_final_$constraints.ptau" "$circuit"_0000.zkey
-snarkjs zkey contribute "$circuit"_0000.zkey "$circuit"_0001.zkey --name="Jinank Jain" -v
-snarkjs zkey export verificationkey "$circuit"_0001.zkey verification_key.json
+${nodex} ${node_params} ${snarkjs} groth16 setup ${circuit}.r1cs powersOfTau28_hez_final_${constraints}.ptau ${circuit}_0000.zkey
+${nodex} ${node_params} ${snarkjs} zkey contribute ${circuit}_0000.zkey ${circuit}_0001.zkey --name="Jinank Jain" -v
+${nodex} ${node_params} ${snarkjs} zkey export verificationkey ${circuit}_0001.zkey verification_key.json
 popd
 
 echo "Done generating verification key: $builddir/verification_key.json!"
