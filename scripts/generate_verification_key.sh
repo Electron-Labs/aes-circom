@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright © 2022, Electron Labs
 
 set -o xtrace
 set -o verbose
