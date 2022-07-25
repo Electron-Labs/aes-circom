@@ -47,3 +47,4 @@ jobs:
       - run: cargo build --release --manifest-path=circom/Cargo.toml && cargo install --path circom/circom
       - run: npm ci
       - run: npm test
+      - run: npm run lint-check
