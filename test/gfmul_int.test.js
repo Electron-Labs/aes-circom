@@ -1,7 +1,7 @@
 const path = require("path");
-const assert = require('assert');
-const wasmTester = require('circom_tester').wasm;
-const Module = require('./module.js');
+const assert = require("assert");
+const wasmTester = require("circom_tester").wasm;
+const Module = require("./module.js");
 
 
 describe("GFmul test", () => {
@@ -10,7 +10,7 @@ describe("GFmul test", () => {
         const a = [BigInt("1"),BigInt("0")];
         const b = [BigInt("4876465869548802997"),BigInt("9173032812820655379")];
         // const res = [BigInt("1447496719058453797"),BigInt("10021191554797066756")];
-        var res = []
+        var res = [];
         const res_len = 2;
 
         const a_ptr = Module._malloc(a.length * BigUint64Array.BYTES_PER_ELEMENT);
@@ -32,5 +32,5 @@ describe("GFmul test", () => {
         console.log("Expected", res);
         console.log("witness", witness);
         assert.ok(res.every((v, i)=> v == witness[i]));
-    })
-})
+    });
+});

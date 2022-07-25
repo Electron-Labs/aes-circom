@@ -1,7 +1,7 @@
 const path = require("path");
-const assert = require('assert');
-const wasmTester = require('circom_tester').wasm;
-const Module = require('./module.js');
+const assert = require("assert");
+const wasmTester = require("circom_tester").wasm;
+const Module = require("./module.js");
 
 
 describe("Mul test", () => {
@@ -24,5 +24,5 @@ describe("Mul test", () => {
         console.log("Expected", res);    
         console.log("witness", witness);
         assert.ok(res.every((v, i)=> v == witness[i]));
-    })
-})
+    });
+});
