@@ -2,7 +2,7 @@ const path = require("path");
 const assert = require("assert");
 const wasmTester = require("circom_tester").wasm;
 const Module = require("./module.js");
-
+const utils = require("./utils");
 
 describe("AES256 Encrypt Test", () => {
     it("Show do encrypt correctly", async() => {
@@ -27,11 +27,30 @@ describe("AES256 Encrypt Test", () => {
             out.push(Module.HEAPU32[out_ptr/Uint32Array.BYTES_PER_ELEMENT + i]);
         }
 
-        let witness = await cir.calculateWitness({"ks":ks, "in":inp});
-        witness = witness.slice(1,5);
-        console.log("expected", out);
-        console.log("witness", witness);
+        var ks_buffer = [];
+        for(let i=0; i<ks.length; i++)
+        {
+            ks_buffer.push(...utils.intToLEBuffer(ks[i], 4));
+        }
+        var ks_bits = utils.buffer2bits(ks_buffer);
+
+        var inp_buffer = [];
+        for(let i=0; i<inp.length; i++)
+        {
+            inp_buffer.push(...utils.intToLEBuffer(inp[i], 4));
+        }
+        var inp_bits = utils.buffer2bits(inp_buffer);
+
+        var out_buffer = [];
+        for(let i=0; i<out.length; i++)
+        {
+            out_buffer.push(...utils.intToLEBuffer(out[i], 4));
+        }
+        var out_bits = utils.buffer2bits(out_buffer);
+
+        let witness = await cir.calculateWitness({"ks":ks_bits, "in":inp_bits});
+        witness = witness.slice(1,129);
 		
-        assert.ok(out.every((v, i)=> v == witness[i]));
+        assert.ok(out_bits.every((v, i)=> v == witness[i]));
     });
 });

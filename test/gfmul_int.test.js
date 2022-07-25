@@ -2,7 +2,7 @@ const path = require("path");
 const assert = require("assert");
 const wasmTester = require("circom_tester").wasm;
 const Module = require("./module.js");
-
+const utils = require("./utils");
 
 describe("GFmul test", () => {
     it("Show do gf multiplication correctly", async() => {
@@ -27,10 +27,27 @@ describe("GFmul test", () => {
             res.push(BigInt(Module.HEAPU64[res_ptr/BigUint64Array.BYTES_PER_ELEMENT + i]));
         }
 
-        let witness = await cir.calculateWitness({"a": a, "b": b});
-        witness = witness.slice(1, 3);
-        console.log("Expected", res);
-        console.log("witness", witness);
-        assert.ok(res.every((v, i)=> v == witness[i]));
+        var a0_buffer = [...utils.intToLEBuffer(a[0], 8)];
+        var a0_bits = utils.buffer2bits(a0_buffer);
+
+        var a1_buffer = [...utils.intToLEBuffer(a[1], 8)];
+        var a1_bits = utils.buffer2bits(a1_buffer);
+
+        var b0_buffer = [...utils.intToLEBuffer(b[0], 8)];
+        var b0_bits = utils.buffer2bits(b0_buffer);
+
+        var b1_buffer = [...utils.intToLEBuffer(b[1], 8)];
+        var b1_bits = utils.buffer2bits(b1_buffer);
+
+        var res_buffer = [];
+        for(let i=0; i<res.length; i++)
+        {
+            res_buffer.push(...utils.intToLEBuffer(res[i], 8));
+        }
+        var res_bits = utils.buffer2bits(res_buffer);
+
+        let witness = await cir.calculateWitness({"a": [a0_bits,a1_bits], "b": [b0_bits, b1_bits]});
+        witness = witness.slice(1, 129);
+        assert.ok(res_bits.every((v, i)=> v == witness[i]));
     });
 });

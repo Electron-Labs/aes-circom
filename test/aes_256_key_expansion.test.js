@@ -2,7 +2,7 @@ const path = require("path");
 const assert = require("assert");
 const wasmTester = require("circom_tester").wasm;
 const Module = require("./module.js");
-
+const utils = require("./utils");
 
 describe("AES256 Key Expansion test", () => {
     it("Show do key expansion correctly", async() => {
@@ -24,10 +24,15 @@ describe("AES256 Key Expansion test", () => {
             ks.push(Module.HEAPU32[ks_ptr/Uint32Array.BYTES_PER_ELEMENT + i]);
         }
 
-        let witness = await cir.calculateWitness({key: ip});
-        witness = witness.slice(1,61);    
-        console.log("Expected", ks);
-        console.log("witness", witness);
-        assert.ok(ks.every((v, i)=> v == witness[i]));
+        var ks_buffer = [];
+        for(let i=0; i<ks_len; i++)
+        {
+            ks_buffer.push(...utils.intToLEBuffer(ks[i], 4));
+        }
+        var ks_bits = utils.buffer2bits(ks_buffer);
+        
+        let witness = await cir.calculateWitness({key: utils.buffer2bits(ip)});
+        witness = witness.slice(1,1921);
+        assert.ok(ks_bits.every((v, i)=> v == witness[i]));
     });
 });

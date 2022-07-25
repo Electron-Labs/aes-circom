@@ -1,8 +1,8 @@
 const path = require("path");
 const assert = require("assert");
-const crypto = require("crypto");
 const wasmTester = require("circom_tester").wasm;
 const Module = require("./module.js");
+const utils = require("./utils");
 
 describe("Complete Encryption test", () => {
     it("Show do encryption correctly", async() => {
@@ -37,18 +37,12 @@ describe("Complete Encryption test", () => {
             CT.push(Module.HEAPU8[TAG_ptr/Uint8Array.BYTES_PER_ELEMENT + i]);
         }
 
-        const CIPHERTEXT = Uint8Array.from(CT);
-
-        const hash = crypto.createHash("sha256")
-            .update(CIPHERTEXT)
-            .digest("hex");
-        const x1 = BigInt("0x"+hash.slice(0,32));
-        const x2 = BigInt("0x"+hash.slice(32));
-        const CT_sha256 = [x1, x2];
-        let witness = await cir.calculateWitness({"K1": K1, "N":N, "AAD":AAD, "MSG":MSG, "CIPHERTEXT_SHA256":CT_sha256});
-        witness = witness[1];
-        console.log("Expected", 1);
-        console.log("witness", witness);
-        assert.ok(witness==1);
+        var K1_bits = utils.buffer2bits(K1);
+        var N_bits = utils.buffer2bits(N);
+        var AAD_bits = utils.buffer2bits(AAD);
+        var MSG_bits = utils.buffer2bits(MSG);
+        let witness = await cir.calculateWitness({"K1": K1_bits, "N": N_bits, "AAD": AAD_bits, "MSG": MSG_bits});
+        witness = witness.slice(1, 257);
+        assert.ok(utils.buffer2bits(CT).every((v, i)=> v == witness[i]));
     });
 });
