@@ -5,23 +5,23 @@ include "helper_functions.circom";
 
 template Mul()
 {
-    signal input src1;
-    signal input src2;
-    signal output out[2];
+    signal input src1[64];
+    signal input src2[64];
+    signal output out[128];
 
-    var i, j;
+    var i, j, k;
 
     var dst_bytes[2][64];
     var src1_bytes[64], src2_bytes[64];
 
-    component num2bits_1 = Num2Bits(64);
-    component num2bits_2 = Num2Bits(64);
-
-    num2bits_1.in <== src1;
-    num2bits_2.in <== src2;
-
-    src1_bytes = num2bits_1.out;
-    src2_bytes = num2bits_2.out;
+    for(i=0; i<8; i++)
+    {
+        for(j=0; j<8; j++)
+        {
+            src1_bytes[i*8+j] = src1[i*8+7-j];
+            src2_bytes[i*8+j] = src2[i*8+7-j];
+        }
+    }
 
     component xor_1[64][2][64];
 
@@ -71,15 +71,12 @@ template Mul()
         dst_bytes[1][63] = 0;
     }
 
-    component bits2num_1[2];
     for(i=0; i<2; i++)
     {
-        bits2num_1[i] = Bits2Num(64);
-        for(j=0; j<64; j++)
+        for(j=0; j<8; j++)
         {
-            bits2num_1[i].in[j] <== dst_bytes[i][j];
+            for(k=0; k<8; k++) out[i*64+j*8+k] <== dst_bytes[i][j*8+7-k];
         }
-        out[i] <== bits2num_1[i].out;
     }
 
 }

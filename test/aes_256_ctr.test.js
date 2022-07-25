@@ -2,7 +2,7 @@ const path = require("path");
 const assert = require("assert");
 const wasmTester = require("circom_tester").wasm;
 const Module = require("./module.js");
-
+const utils = require("./utils");
 
 describe("AES256 CTR Test", () => {
     it("Show do ctr correctly", async() => {
@@ -30,11 +30,23 @@ describe("AES256 CTR Test", () => {
             out.push(Module.HEAPU8[out_ptr/Uint8Array.BYTES_PER_ELEMENT + i]);
         }
 
-        let witness = await cir.calculateWitness({"ks":ks, "in":inp, "ctr":ctr});
-        witness = witness.slice(1,257);
-        console.log("expected", out);
-        console.log("witness", witness);
+        var ks_buffer = [];
+        for(let i=0; i<ks.length; i++)
+        {
+            ks_buffer.push(...utils.intToLEBuffer(ks[i], 4));
+        }
+        var ks_bits = utils.buffer2bits(ks_buffer);
 		
-        assert.ok(out.every((v, i)=> v == witness[i]));
+        var ctr_buffer = [];
+        for(let i=0; i<ctr.length; i++)
+        {
+            ctr_buffer.push(...utils.intToLEBuffer(ctr[i], 4));
+        }
+        var ctr_bits = utils.buffer2bits(ctr_buffer);
+
+        let witness = await cir.calculateWitness({"ks":ks_bits, "in":utils.buffer2bits(inp), "ctr":ctr_bits});
+        witness = witness.slice(1,2049);
+		
+        assert.ok(utils.buffer2bits(out).every((v, i)=> v == witness[i]));
     });
 });

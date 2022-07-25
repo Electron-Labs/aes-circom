@@ -8,242 +8,163 @@ include "polyval.circom";
 include "helper_functions.circom";
 include "../node_modules/circomlib/circuits/sha256/sha256.circom";
 
-template GCM_SIV_ENC_2_Keys(aad_len, msg_len)
+template GCM_SIV_ENC_2_Keys(n_bits_aad, n_bits_msg)
 {
-    signal input K1[32];
-    signal input N[16];
-    signal input AAD[aad_len];
-    signal input MSG[msg_len];
-    signal input CIPHERTEXT_SHA256[2];
+    var aad_len = n_bits_aad/8;
+    var msg_len = n_bits_msg/8;
+    assert(aad_len%16 == 0);
+    assert(msg_len%16 == 0);
+    signal input K1[256];
+    signal input N[128];
+    signal input AAD[n_bits_aad];
+    signal input MSG[n_bits_msg];
 
-    var CT[msg_len+16];
-
-    signal output out;
+    signal output CT[(msg_len+16)*8];
 
     var i, j, k;
 
-    var TAG[16];
-    for(i=0; i<16; i++) TAG[i] = 0;
-    var ks[60];
-    var _N[4];
-    var _T[12]; 
-    var Record_Hash_Key[2];
-    var Record_Enc_Key_64[4];
-    var T[2] = [0, 0];
-    var T_masked[2];
-    var CTR[2];
-    var LENBLK[2];
+    var TAG[128];
+    for(i=0; i<128; i++) TAG[i] = 0;
+    var ks[1920];
+    var _N[128];
+    var _T[768]; 
+    var Record_Hash_Key[128];
+    var Record_Enc_Key[256];
+    var T[2][64];
+    for(i=0; i<2; i++)
+    {
+        for(j=0; j<64; j++) T[i][j] = 0;
+    }
+    var T_masked[2][64];
+    var CTR[128];
+    var LENBLK_bits[2][64];
 
-    LENBLK[0] = aad_len*8;
-    LENBLK[1] = msg_len*8;
+    component num2bits_1[2];
+    num2bits_1[0] = Num2Bits(64);
+    num2bits_1[0].in <== aad_len*8;
+    num2bits_1[1] = Num2Bits(64);
+    num2bits_1[1].in <== msg_len*8;
+
+    for(i=0; i<2; i++)
+    {
+        for(j=0; j<8; j++)
+        {
+            for(k=0; k<8; k++) LENBLK_bits[i][j*8+k] = num2bits_1[i].out[j*8+7-k];
+        }
+    }
     
     component key_expansion_1 = AES256KeyExpansion();
-    for(i=0; i<32; i++) key_expansion_1.key[i] <== K1[i];
+    for(i=0; i<256; i++) key_expansion_1.key[i] <== K1[i];
     ks = key_expansion_1.w;
 
-    var N_32[4];
-    component typecast_1 = Typecast(16, 8, 32);
-    for(i=0; i<16; i++) typecast_1.in[i] <== N[i];
-    N_32 = typecast_1.out;
-    _N[1] = N_32[0];
-    _N[2] = N_32[1];
-    _N[3] = N_32[2];
-
-    component aes_256_encrypt_1[6];
-    component typecast_2[6];
-    for(i=0; i<6; i++)
+    for(i=0; i<3*32; i++)
     {
-        aes_256_encrypt_1[i] = AES256Encrypt();
-        typecast_2[i] = Typecast(4, 32, 64);
+        _N[i+32] = N[i];
     }
+
+    component num2bits_2[6];
+    component aes_256_encrypt_1[6];
 
     for(i=0; i<6; i++) 
     {
-        _N[0] = i;
-        var _T_32[4];
+        aes_256_encrypt_1[i] = AES256Encrypt();
+        num2bits_2[i] = Num2Bits(32);
+        num2bits_2[i].in <== i;
+        for(j=0; j<4; j++)
+        {
+            for(k=0; k<8; k++) _N[j*8+k] = num2bits_2[i].out[j*8+7-k];
+        }
+        var _T_tmp[128];
 
-        for(j=0; j<4; j++) aes_256_encrypt_1[i].in[j] <== _N[j];
-        for(j=0; j<60; j++) aes_256_encrypt_1[i].ks[j] <== ks[j];
-        _T_32 = aes_256_encrypt_1[i].out;
-
-        for(j=0; j<4; j++) typecast_2[i].in[j] <== _T_32[j];
-        _T[2*i] = typecast_2[i].out[0];
-        _T[2*i+1] = typecast_2[i].out[1];
+        for(j=0; j<128; j++) aes_256_encrypt_1[i].in[j] <== _N[j];
+        for(j=0; j<1920; j++) aes_256_encrypt_1[i].ks[j] <== ks[j];
+        _T_tmp = aes_256_encrypt_1[i].out;
+        for(j=0; j<128; j++) _T[i*128+j] = _T_tmp[j];
     }
 
-    Record_Hash_Key[0] = _T[0];
-    Record_Hash_Key[1] = _T[2];
-    Record_Enc_Key_64[0] = _T[4];
-    Record_Enc_Key_64[1] = _T[6];
-    Record_Enc_Key_64[2] = _T[8];
-    Record_Enc_Key_64[3] = _T[10];
+    for(i=0; i<64; i++) Record_Hash_Key[i] = _T[i];
+    for(i=0; i<64; i++) Record_Hash_Key[i+64] = _T[64*2+i];
+    for(i=0; i<64; i++) Record_Enc_Key[i] = _T[64*4+i];
+    for(i=0; i<64; i++) Record_Enc_Key[i+64] = _T[64*6+i];
+    for(i=0; i<64; i++) Record_Enc_Key[i+64*2] = _T[64*8+i];
+    for(i=0; i<64; i++) Record_Enc_Key[i+64*3] = _T[64*10+i];
 
-    component typecast_3 = Typecast(aad_len, 8, 64);
-    component polyval_1 = POLYVAL(aad_len);
+    component polyval_1 = POLYVAL(n_bits_aad);
     if(aad_len != 0)
     {
-        var AAD_64[aad_len/8];
-        
-        for(i=0; i<aad_len; i++) typecast_3.in[i] <== AAD[i];
-        AAD_64 = typecast_3.out;
-
-        
-        for(i=0; i<aad_len/8; i++) polyval_1.in[i] <== AAD_64[i];
+        for(i=0; i<n_bits_aad; i++) polyval_1.in[i] <== AAD[i];
+        for(i=0; i<128; i++) polyval_1.H[i] <== Record_Hash_Key[i];
         for(i=0; i<2; i++)
         {
-            polyval_1.H[i] <== Record_Hash_Key[i];
-            polyval_1.T[i] <== T[i];
+            for(j=0; j<64; j++) polyval_1.T[i][j] <== T[i][j];
         }
-
         T = polyval_1.result;
     }
 
-    var MSG_64[msg_len/8];
-    component typecast_4 = Typecast(msg_len, 8, 64);
-    for(i=0; i<msg_len; i++) typecast_4.in[i] <== MSG[i];
-    MSG_64 = typecast_4.out;
-
-    component polyval_2 = POLYVAL(msg_len);
-    for(i=0; i<msg_len/8; i++) polyval_2.in[i] <== MSG_64[i];
+    component polyval_2 = POLYVAL(n_bits_msg);
+    for(i=0; i<n_bits_msg; i++) polyval_2.in[i] <== MSG[i];
+    for(i=0; i<128; i++) polyval_2.H[i] <== Record_Hash_Key[i];
     for(i=0; i<2; i++)
     {
-        polyval_2.H[i] <== Record_Hash_Key[i];
-        polyval_2.T[i] <== T[i];
+        for(j=0; j<64; j++) polyval_2.T[i][j] <== T[i][j];
     }
-
     T = polyval_2.result;
 
-    component polyval_3 = POLYVAL(16);
-    for(i=0; i<2; i++) polyval_3.in[i] <== LENBLK[i];
+    component polyval_3 = POLYVAL(128);
     for(i=0; i<2; i++)
     {
-        polyval_3.H[i] <== Record_Hash_Key[i];
-        polyval_3.T[i] <== T[i];
+        for(j=0; j<64; j++) polyval_3.in[i*64+j] <== LENBLK_bits[i][j];
     }
-
+    for(i=0; i<128; i++) polyval_3.H[i] <== Record_Hash_Key[i];
+    for(i=0; i<2; i++)
+    {
+        for(j=0; j<64; j++) polyval_3.T[i][j] <== T[i][j];
+    }
     T = polyval_3.result;
 
-    var N_64[2];
-    component typecast_5 = Typecast(16, 8, 64);
-    for(i=0; i<16; i++) typecast_5.in[i] <== N[i];
-    N_64 = typecast_5.out;
-
-    component int_xor_1[2];
-    for(i=0; i<2; i++) int_xor_1[i] = IntXor(64);
+    component xor_1[2][64];
 
     for(i=0; i<2; i++)
     {
-        int_xor_1[i].a <== T[i];
-        int_xor_1[i].b <== N_64[i];
-
-        T[i] = int_xor_1[i].out;
-    }
-
-    var TAG_64[2];
-    component typecast_6 = Typecast(16, 8, 64);
-    for(i=0; i<16; i++) typecast_6.in[i] <== TAG[i];
-    TAG_64 = typecast_6.out;
-
-    TAG_64[0] = T[0];
-    T_masked[0] = T[0];
-    TAG_64[1] = T[1];
-    T_masked[1] = T[1];
-
-    var TAG_8[16];
-    component typecast_7 = Typecast(2, 64, 8);
-    for(i=0; i<2; i++) typecast_7.in[i] <== TAG_64[i];
-    TAG_8 = typecast_7.out;
-
-    component int_and_1 = IntAnd(8);
-    int_and_1.a <== TAG_8[15];
-    int_and_1.b <== 127;
-    TAG_8[15] = int_and_1.out;
-
-
-    var Record_Enc_Key[32];
-    component typecast_8 = Typecast(4, 64, 8);
-    for(i=0; i<4; i++) typecast_8.in[i] <== Record_Enc_Key_64[i];
-    Record_Enc_Key = typecast_8.out;
-
-    component key_expansion_2 = AES256KeyExpansion();
-    for(i=0; i<32; i++) key_expansion_2.key[i] <== Record_Enc_Key[i];
-    ks = key_expansion_2.w;
-
-    var TAG_32[4];
-    component typecast_9 = Typecast(16, 8, 32);
-    for(i=0; i<16; i++) typecast_9.in[i] <== TAG_8[i];
-    TAG_32 = typecast_9.out;
-
-    component aes_256_encrypt_2 = AES256Encrypt();
-    for(i=0; i<4; i++) aes_256_encrypt_2.in[i] <== TAG_32[i];
-    for(i=0; i<60; i++) aes_256_encrypt_2.ks[i] <== ks[i];
-    TAG_32 = aes_256_encrypt_2.out;
-
-    var TAG_64_1[2];
-    component typecast_10 = Typecast(4, 32, 64);
-    for(i=0; i<4; i++) typecast_10.in[i] <== TAG_32[i];
-    TAG_64_1 = typecast_10.out;
-
-    CTR[0] = TAG_64_1[0];
-    CTR[1] = TAG_64_1[1];
-
-    var CTR_8[16];
-    component typecast_11 = Typecast(2, 64, 8);
-    for(i=0; i<2; i++) typecast_11.in[i] <== CTR[i];
-    CTR_8 = typecast_11.out;
-
-    component int_or_1 = IntOr(8);
-    int_or_1.a <== CTR_8[15];
-    int_or_1.b <== 128;
-    CTR_8[15] = int_or_1.out;
-
-    var CTR_32[4];
-    component typecast_12 = Typecast(16, 8, 32);
-    for(i=0; i<16; i++) typecast_12.in[i] <== CTR_8[i];
-    CTR_32 = typecast_12.out;
-
-    component aes_256_ctr = AES256CTR(msg_len);
-    for(i=0; i<msg_len; i++) aes_256_ctr.in[i] <== MSG[i];
-    for(i=0; i<4; i++) aes_256_ctr.ctr[i] <== CTR_32[i];
-    for(i=0; i<60; i++) aes_256_ctr.ks[i] <== ks[i];
-
-    component typecast_13 = Typecast(2, 64, 8);
-    for(i=0; i<2; i++) typecast_13.in[i] <== TAG_64_1[i];
-    TAG = typecast_13.out;
-
-    for(i=0; i<msg_len; i++) CT[i] = aes_256_ctr.out[i];
-    for(i=0; i<16; i++) CT[msg_len+i] = TAG[i];
-
-    component sha256 = Sha256((msg_len+16)*8);
-    component num2bits_1[msg_len+16];
-
-    for(i=0; i<msg_len+16; i++)
-    {
-        num2bits_1[i] = Num2Bits(8);
-        num2bits_1[i].in <== CT[i];
-        for(j=0; j<8; j++) sha256.in[i*8+7-j] <== num2bits_1[i].out[j];
-    }
-
-    component bits2num_1[2];
-    
-    for(i=0; i<2; i++)
-    {
-        bits2num_1[i] = Bits2Num(128);
-        for(j=0; j<128; j++)
+        for(j=0; j<64; j++)
         {
-            bits2num_1[i].in[127-j] <== sha256.out[i*128+j];
+            xor_1[i][j] = XOR();
+            xor_1[i][j].a <== T[i][j];
+            xor_1[i][j].b <== N[i*64+j];
+
+            T[i][j] = xor_1[i][j].out;
         }
     }
 
-    component is_equal_1[2];
-    component multi_and_1 = MultiAND(2);
     for(i=0; i<2; i++)
     {
-        is_equal_1[i] = IsEqual();
-        is_equal_1[i].in[0] <== CIPHERTEXT_SHA256[i];
-        is_equal_1[i].in[1] <== bits2num_1[i].out;
-        multi_and_1.in[i] <== is_equal_1[i].out;
+        for(j=0; j<64; j++)
+        {
+            TAG[i*64+j] = T[i][j];
+            T_masked[i][j] = T[i][j];
+        }
     }
 
-    out <== multi_and_1.out;
+    TAG[15*8] = 0;
+
+    component key_expansion_2 = AES256KeyExpansion();
+    for(i=0; i<256; i++) key_expansion_2.key[i] <== Record_Enc_Key[i];
+    ks = key_expansion_2.w;
+
+    component aes_256_encrypt_2 = AES256Encrypt();
+    for(i=0; i<128; i++) aes_256_encrypt_2.in[i] <== TAG[i];
+    for(i=0; i<1920; i++) aes_256_encrypt_2.ks[i] <== ks[i];
+    TAG = aes_256_encrypt_2.out;
+
+    for(i=0; i<128; i++) CTR[i] = TAG[i];
+
+    CTR[15*8] = 1;
+
+    component aes_256_ctr = AES256CTR(n_bits_msg);
+    for(i=0; i<n_bits_msg; i++) aes_256_ctr.in[i] <== MSG[i];
+    for(i=0; i<128; i++) aes_256_ctr.ctr[i] <== CTR[i];
+    for(i=0; i<1920; i++) aes_256_ctr.ks[i] <== ks[i];
+
+    for(i=0; i<msg_len*8; i++) CT[i] <== aes_256_ctr.out[i];
+    for(i=0; i<128; i++) CT[msg_len*8+i] <== TAG[i];
 }

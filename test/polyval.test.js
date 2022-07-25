@@ -2,7 +2,7 @@ const path = require("path");
 const assert = require("assert");
 const wasmTester = require("circom_tester").wasm;
 const Module = require("./module.js");
-
+const utils = require("./utils");
 
 describe("Polyval test", () => {
     it("Show do polyval hashing correctly", async() => {
@@ -29,10 +29,35 @@ describe("Polyval test", () => {
             result.push(BigInt(Module.HEAPU64[result_ptr/BigUint64Array.BYTES_PER_ELEMENT + i]));
         }
 
-        let witness = await cir.calculateWitness({"in": input, "H": H, "T": T});
-        witness = witness.slice(1, 3);
-        console.log("Expected", result);
-        console.log("witness", witness);
-        assert.ok(result.every((v, i)=> v == witness[i]));
+        var input_buffer = [];
+        for(let i=0; i<input.length; i++)
+        {
+            input_buffer.push(...utils.intToLEBuffer(input[i], 8));
+        }
+        var input_bits = utils.buffer2bits(input_buffer);
+
+        var H_buffer = [];
+        for(let i=0; i<H.length; i++)
+        {
+            H_buffer.push(...utils.intToLEBuffer(H[i], 8));
+        }
+        var H_bits = utils.buffer2bits(H_buffer);
+
+        var T0_buffer = [...utils.intToLEBuffer(T[0], 8)];
+        var T0_bits = utils.buffer2bits(T0_buffer);
+
+        var T1_buffer = [...utils.intToLEBuffer(T[1], 8)];
+        var T1_bits = utils.buffer2bits(T1_buffer);
+
+        var result_buffer = [];
+        for(let i=0; i<result.length; i++)
+        {
+            result_buffer.push(...utils.intToLEBuffer(result[i], 8));
+        }
+        var result_bits = utils.buffer2bits(result_buffer);
+
+        let witness = await cir.calculateWitness({"in": input_bits, "H": H_bits, "T": [T0_bits, T1_bits]});
+        witness = witness.slice(1, 129);
+        assert.ok(result_bits.every((v, i)=> v == witness[i]));
     });
 });
