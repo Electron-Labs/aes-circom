@@ -1,8 +1,7 @@
 const path = require("path");
-const assert = require('assert');
-const wasmTester = require('circom_tester').wasm;
-const {isMainThread} = require('worker_threads');
-const Module = require('./module.js');
+const assert = require("assert");
+const wasmTester = require("circom_tester").wasm;
+const Module = require("./module.js");
 
 
 describe("AES256 Key Expansion test", () => {
@@ -30,5 +29,5 @@ describe("AES256 Key Expansion test", () => {
         console.log("Expected", ks);
         console.log("witness", witness);
         assert.ok(ks.every((v, i)=> v == witness[i]));
-    })
-})
+    });
+});

@@ -1,6 +1,6 @@
 const path = require("path");
-const assert = require('assert');
-const wasmTester = require('circom_tester').wasm;
+const assert = require("assert");
+const wasmTester = require("circom_tester").wasm;
 
 
 describe("Complete Decryption test", () => {
@@ -18,5 +18,5 @@ describe("Complete Decryption test", () => {
         console.log("witness", witness);
         assert.ok(success==1);
         assert.ok(MSG.every((v, i)=> v == witness[i]));
-    })
-})
+    });
+});

@@ -1,7 +1,7 @@
 const path = require("path");
-const assert = require('assert');
-const wasmTester = require('circom_tester').wasm;
-const Module = require('./module.js');
+const assert = require("assert");
+const wasmTester = require("circom_tester").wasm;
+const Module = require("./module.js");
 
 
 describe("Polyval test", () => {
@@ -34,5 +34,5 @@ describe("Polyval test", () => {
         console.log("Expected", result);
         console.log("witness", witness);
         assert.ok(result.every((v, i)=> v == witness[i]));
-    })
-})
+    });
+});
