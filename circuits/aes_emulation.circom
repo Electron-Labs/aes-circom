@@ -33,7 +33,21 @@ template EmulatedAesencSubstituteBytes()
 {
     signal input in[16];
     signal output out[16];
-
-    for(var i=0; i<16; i++) out[i] <-- emulated_aesenc_rijndael_sbox(in[i]);
     
+    component aesenc_select[16];
+
+    for(var iter = 0; iter<16; iter++){
+        aesenc_select[iter] = IndexSelector(256);
+    }
+
+    for(var i = 0; i<16; i++){
+        for(var j=0; j<256; j++){
+            aesenc_select[i].in[j] <== emulated_aesenc_rijndael_sbox(j);
+        }
+    }
+
+    for(var i=0; i<16; i++) {
+        aesenc_select[i].index <== in[i];
+        out[i] <== aesenc_select[i].out;
+    }
 }

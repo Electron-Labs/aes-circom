@@ -1,4 +1,4 @@
-// Copyright © 2022, Electron Labs
+
 pragma circom 2.0.0;
 
 include "helper_functions.circom";
@@ -38,34 +38,49 @@ template AES256KeyExpansion()
     component bits2num_1[60][4];
     component num2bits_1[60][5];
     component xor_2[60][8];
-
+    component i_select[60][4];
+    component r_con_select[60];
 
     while(i<(Nb*(Nr+1)))
     {
         var tmp[32];
         tmp = ks[i-1];
+        i_select[i][0] = IndexSelector(256);
+        i_select[i][1] = IndexSelector(256);
+        i_select[i][2] = IndexSelector(256);
+        i_select[i][3] = IndexSelector(256);
+        for(var iter = 0; iter < 256; iter++){
+            i_select[i][0].in[iter] <== emulated_aesenc_rijndael_sbox(iter);
+            i_select[i][1].in[iter] <== emulated_aesenc_rijndael_sbox(iter);
+            i_select[i][2].in[iter] <== emulated_aesenc_rijndael_sbox(iter);
+            i_select[i][3].in[iter] <== emulated_aesenc_rijndael_sbox(iter);
+        }
 
         if(i%Nk == 0)
         {
             bits2num_1[i][0] = Bits2Num(8);
             for(j=0; j<8; j++) bits2num_1[i][0].in[j] <== tmp[7-j];
             num2bits_1[i][0] = Num2Bits(8);
-            num2bits_1[i][0].in <-- emulated_aesenc_rijndael_sbox(bits2num_1[i][0].out);
+            i_select[i][0].index <== bits2num_1[i][0].out;
+            num2bits_1[i][0].in <== i_select[i][0].out;
 
             bits2num_1[i][1] = Bits2Num(8);
             for(j=0; j<8; j++) bits2num_1[i][1].in[j] <== tmp[7-j+8];
             num2bits_1[i][1] = Num2Bits(8);
-            num2bits_1[i][1].in <-- emulated_aesenc_rijndael_sbox(bits2num_1[i][1].out);
+            i_select[i][1].index <== bits2num_1[i][1].out;
+            num2bits_1[i][1].in <== i_select[i][1].out;
 
             bits2num_1[i][2] = Bits2Num(8);
             for(j=0; j<8; j++) bits2num_1[i][2].in[j] <== tmp[7-j+16];
             num2bits_1[i][2] = Num2Bits(8);
-            num2bits_1[i][2].in <-- emulated_aesenc_rijndael_sbox(bits2num_1[i][2].out);
+            i_select[i][2].index <== bits2num_1[i][2].out;
+            num2bits_1[i][2].in <== i_select[i][2].out;
 
             bits2num_1[i][3] = Bits2Num(8);
             for(j=0; j<8; j++) bits2num_1[i][3].in[j] <== tmp[7-j+24];
             num2bits_1[i][3] = Num2Bits(8);
-            num2bits_1[i][3].in <-- emulated_aesenc_rijndael_sbox(bits2num_1[i][3].out);
+            i_select[i][3].index <== bits2num_1[i][3].out;
+            num2bits_1[i][3].in <== i_select[i][3].out;
 
             for(j=0; j<8; j++) tmp[j+24] = num2bits_1[i][0].out[7-j];
             for(j=0; j<8; j++) tmp[j] = num2bits_1[i][1].out[7-j];
@@ -73,7 +88,13 @@ template AES256KeyExpansion()
             for(j=0; j<8; j++) tmp[j+16] = num2bits_1[i][3].out[7-j];
 
             num2bits_1[i][4] = Num2Bits(8);
-            num2bits_1[i][4].in <== rcon[i/Nk-1];
+            
+            r_con_select[i] = IndexSelector(10);
+            for(var iter = 0; iter<10; iter++){
+                r_con_select[i].in[iter] <== rcon[iter];
+            }
+            r_con_select[i].index <== i/Nk-1;
+            num2bits_1[i][4].in <== r_con_select[i].out;
 
             for(j=0; j<8; j++)
             {
@@ -89,22 +110,30 @@ template AES256KeyExpansion()
             bits2num_1[i][0] = Bits2Num(8);
             for(j=0; j<8; j++) bits2num_1[i][0].in[j] <== tmp[7-j];
             num2bits_1[i][0] = Num2Bits(8);
-            num2bits_1[i][0].in <-- emulated_aesenc_rijndael_sbox(bits2num_1[i][0].out);
+            
+            i_select[i][0].index <== bits2num_1[i][0].out;
+            num2bits_1[i][0].in <== i_select[i][0].out;
 
             bits2num_1[i][1] = Bits2Num(8);
             for(j=0; j<8; j++) bits2num_1[i][1].in[j] <== tmp[7-j+8];
             num2bits_1[i][1] = Num2Bits(8);
-            num2bits_1[i][1].in <-- emulated_aesenc_rijndael_sbox(bits2num_1[i][1].out);
+            
+            i_select[i][1].index <== bits2num_1[i][1].out;
+            num2bits_1[i][1].in <== i_select[i][1].out;
 
             bits2num_1[i][2] = Bits2Num(8);
             for(j=0; j<8; j++) bits2num_1[i][2].in[j] <== tmp[7-j+16];
             num2bits_1[i][2] = Num2Bits(8);
-            num2bits_1[i][2].in <-- emulated_aesenc_rijndael_sbox(bits2num_1[i][2].out);
+            
+            i_select[i][2].index <== bits2num_1[i][2].out;
+            num2bits_1[i][2].in <== i_select[i][2].out;
 
             bits2num_1[i][3] = Bits2Num(8);
             for(j=0; j<8; j++) bits2num_1[i][3].in[j] <== tmp[7-j+24];
             num2bits_1[i][3] = Num2Bits(8);
-            num2bits_1[i][3].in <-- emulated_aesenc_rijndael_sbox(bits2num_1[i][3].out);
+            
+            i_select[i][3].index <== bits2num_1[i][3].out;
+            num2bits_1[i][3].in <== i_select[i][3].out;
 
             for(j=0; j<8; j++) tmp[j] = num2bits_1[i][0].out[7-j];
             for(j=0; j<8; j++) tmp[j+8] = num2bits_1[i][1].out[7-j];
