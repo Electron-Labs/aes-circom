@@ -230,21 +230,36 @@ template SumMultiple(n) {
     sum <== sums[n-1];
 }
 
+template IsZero2() {
+    signal input in;
+    signal output out;
+    signal inv;
+    inv <-- in!=0 ? 1/in : 0;
+    out <-- -in*inv + 1;// this is the issue
+    in*out === 0; 
+}
+
+template IsEqual2() {
+    signal input in[2];
+    signal output out;
+    component isz = IsZero2();
+    in[1] - in[0] --> isz.in;
+    isz.out ==> out;
+}
+
 template IndexSelector(total) {
     signal input in[total];
     signal input index;
     signal output out;
 
-    //maybe add (index<total) check later when we decide number of bits
-
     component calcTotal = SumMultiple(total);
     component equality[total];
 
     for(var i=0; i<total; i++){
-        equality[i] = IsEqual();
-        equality[i].in[0] <== i;
-        equality[i].in[1] <== index;
-        calcTotal.nums[i] <== equality[i].out * in[i];
+        equality[i] = IsEqual2();
+        equality[i].in[0] <-- i;
+        equality[i].in[1] <-- index;
+        calcTotal.nums[i] <-- equality[i].out * in[i];
     }
 
     out <== calcTotal.sum;
