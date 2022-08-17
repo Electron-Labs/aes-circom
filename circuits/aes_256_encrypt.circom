@@ -43,6 +43,7 @@ template AES256Encrypt()
     component num2bits_2[13][4][4];
     component xor_3[13][4][32];
     component num2bits_3[13][4];
+    component emulated_aesenc_enc_selector[13][4][4];
 
     for(i=0; i<13; i++)
     {
@@ -56,7 +57,16 @@ template AES256Encrypt()
                 
                 for(l=0; l<8; l++) bits2num_1[i][j][k].in[l] <== s_tmp[k*8+l];
 
-                num2bits_2[i][j][k].in <-- emulated_aesenc_enc_table(k, bits2num_1[i][j][k].out);
+                // num2bits_2[i][j][k].in <-- emulated_aesenc_enc_table(k, bits2num_1[i][j][k].out);
+                emulated_aesenc_enc_selector[i][j][k] = IndexSelector(256);
+
+                for(var iter = 0; iter<256; iter++){
+                    emulated_aesenc_enc_selector[i][j][k].in[iter] <== emulated_aesenc_enc_table(k, iter);
+                }
+
+                emulated_aesenc_enc_selector[i][j][k].index <== bits2num_1[i][j][k].out;
+
+                num2bits_2[i][j][k].in <== emulated_aesenc_enc_selector[i][j][k].out;
 
                 if(k==0)
                 {
